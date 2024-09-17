@@ -54,7 +54,7 @@ install_packages() {
   log "Installing Wayland, seatd, Sway, and dependencies..."
 
   # Essential packages for Wayland and Sway
-  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland foot grim wofi"
+  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland foot grim wofi jq"
 
   for pkg in $ESSENTIAL_PACKAGES; do
     if ! pkg info "$pkg" >/dev/null 2>&1; then
@@ -290,16 +290,40 @@ EOF
   cat <<'EOF' > "$SWAY_USER_CONFIG_DIR/monitor_detect.sh"
 #!/bin/sh
 
-# Detect monitor resolution and configure outputs
-OUTPUT_INFO=$(swaymsg -t get_outputs)
+# Retry mechanism in case swaymsg fails to connect
+RETRIES=5
+DELAY=1
 
-MONITOR_NAME=$(echo "$OUTPUT_INFO" | grep -oP '(?<=name":")[^"]+')
-MONITOR_WIDTH=$(echo "$OUTPUT_INFO" | grep -oP '(?<=current_mode":\{"width":)[0-9]+')
-MONITOR_HEIGHT=$(echo "$OUTPUT_INFO" | grep -oP '(?<=current_mode":\{"width":[0-9]+,"height":)[0-9]+')
+for i in $(seq 1 $RETRIES); do
+    # Try to get the output information
+    OUTPUT_INFO=$(swaymsg -t get_outputs 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        # swaymsg succeeded, proceed to configure the monitor
+        echo "$OUTPUT_INFO" | jq -r '.[] | select(.active == true) | .name' | while read -r MONITOR_NAME; do
+            echo "Detecting monitor: $MONITOR_NAME"
 
-if [ -n "$MONITOR_NAME" ] && [ -n "$MONITOR_WIDTH" ] && [ -n "$MONITOR_HEIGHT" ]; then
-  swaymsg output "$MONITOR_NAME" resolution "${MONITOR_WIDTH}x${MONITOR_HEIGHT}" scale 1.0
-fi
+            # Extract available modes (resolutions) for the monitor
+            AVAILABLE_MODES=$(echo "$OUTPUT_INFO" | jq -r --arg MONITOR "$MONITOR_NAME" '.[] | select(.name == $MONITOR) | .modes[] | "\(.width)x\(.height)"')
+
+            # Find the largest resolution available
+            LARGEST_RES=$(echo "$AVAILABLE_MODES" | sort -nr | head -n 1)
+
+            if [ -n "$LARGEST_RES" ]; then
+                echo "Setting monitor $MONITOR_NAME to the largest resolution: $LARGEST_RES"
+                swaymsg output "$MONITOR_NAME" resolution "$LARGEST_RES" scale 1.0
+            else
+                echo "No resolutions found for monitor $MONITOR_NAME"
+            fi
+        done
+        exit 0
+    else
+        echo "swaymsg failed, retrying in $DELAY seconds... (Attempt $i/$RETRIES)"
+        sleep $DELAY
+    fi
+done
+
+echo "Failed to connect to sway after $RETRIES attempts."
+exit 1
 EOF
 
   # Make the monitor detect script executable
