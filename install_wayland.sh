@@ -198,9 +198,7 @@ copy_default_sway_config() {
   cat <<EOF >> "$SWAY_CONFIG_DIR/config"
 # Keyboard configuration
 input "type:keyboard" {
-    xkb_layout us,de,dv,colemak
-    xkb_variant ,nodeadkeys,,
-    xkb_options grp:alt_shift_toggle
+    xkb_layout us
     repeat_delay 500
     repeat_rate 30
 }
@@ -209,9 +207,7 @@ EOF
   cat <<EOF >> "$SWAY_USER_CONFIG_DIR/config"
 # Keyboard configuration
 input "type:keyboard" {
-    xkb_layout us,de,dv,colemak
-    xkb_variant ,nodeadkeys,,
-    xkb_options grp:alt_shift_toggle
+    xkb_layout us
     repeat_delay 500
     repeat_rate 30
 }
