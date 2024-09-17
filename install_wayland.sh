@@ -193,6 +193,29 @@ copy_default_sway_config() {
     log "Failed to copy default Sway configuration to $USER_HOME/.config/sway"
     exit 1
   fi
+
+  # Append keyboard configuration to both configurations
+  cat <<EOF >> "$SWAY_CONFIG_DIR/config"
+# Keyboard configuration
+input "type:keyboard" {
+    xkb_layout us,de,dvp,colemak
+    xkb_variant ,nodeadkeys,,
+    xkb_options grp:alt_shift_toggle
+    repeat_delay 500
+    repeat_rate 30
+}
+EOF
+
+  cat <<EOF >> "$SWAY_USER_CONFIG_DIR/config"
+# Keyboard configuration
+input "type:keyboard" {
+    xkb_layout us,de,dvp,colemak
+    xkb_variant ,nodeadkeys,,
+    xkb_options grp:alt_shift_toggle
+    repeat_delay 500
+    repeat_rate 30
+}
+EOF
 }
 
 # Reboot the system after the script completes
