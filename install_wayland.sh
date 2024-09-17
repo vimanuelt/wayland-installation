@@ -95,6 +95,19 @@ enable_service() {
   fi
 }
 
+# Function to create the seatd group if it doesn't exist
+create_seatd_group() {
+  if ! getent group seatd >/dev/null; then
+    log "Creating seatd group..."
+    if ! pw groupadd seatd; then
+      echo "Failed to create seatd group. Exiting."
+      exit 1
+    fi
+  else
+    log "seatd group already exists."
+  fi
+}
+
 # Function to add user to the seatd group
 add_user_to_seatd() {
   if id -nG "$USERNAME" | grep -qw "seatd"; then
@@ -217,6 +230,9 @@ main() {
       PROFILE_FILE="$USER_HOME/.profile"
       ;;
   esac
+
+  # Create seatd group if it doesn't exist
+  create_seatd_group
 
   # Install essential and optional packages
   install_packages
