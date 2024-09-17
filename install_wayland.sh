@@ -85,6 +85,35 @@ configure_lightdm() {
             "$LIGHTDM_CONF"
 }
 
+# Configure Sway input devices and seat management
+configure_sway_input() {
+  log "Configuring Sway input devices and seat management"
+
+  # Create ~/.config/sway/config if it doesn't exist
+  mkdir -p ~/.config/sway
+
+  # Append the input and seat configuration to sway config
+  cat <<EOF > ~/.config/sway/config
+# Input configuration
+
+# Keyboard input
+input "type:keyboard" {
+    xkb_layout us  # Change 'us' to your preferred keyboard layout
+}
+
+# Mouse input
+input "type:mouse" {
+    pointer_accel 0.5
+}
+
+# Seat configuration for seatd
+seat seat0 {
+    attach input "type:keyboard"
+    attach input "type:mouse"
+}
+EOF
+}
+
 # Update Xsession script for XDG_RUNTIME_DIR and Sway session
 configure_xsession() {
   log "Configuring Xsession script for Sway"
@@ -112,6 +141,19 @@ EOF
   fi
 }
 
+# Enable and start seatd and dbus services
+enable_services() {
+  log "Enabling and starting seatd and dbus services"
+
+  # Enable seatd and dbus on startup
+  sysrc seatd_enable="YES"
+  sysrc dbus_enable="YES"
+
+  # Start seatd and dbus services
+  service seatd start
+  service dbus start
+}
+
 # Restart LightDM to apply changes
 restart_lightdm() {
   log "Restarting LightDM to apply changes"
@@ -131,9 +173,11 @@ main() {
   install_packages
   configure_sway_desktop
   configure_lightdm
+  configure_sway_input
   configure_xsession
 
-  # Restart LightDM
+  # Enable services and restart LightDM
+  enable_services
   restart_lightdm
 
   log "Installation and configuration complete!"
