@@ -31,6 +31,17 @@ detect_keyboard_layout() {
   fi
 }
 
+# Function to detect the home directory of the non-root user
+get_user_home_directory() {
+  log "Detecting non-root user's home directory..."
+
+  # Get the username of the user running the script (who invoked sudo)
+  USERNAME=$(logname)
+  USER_HOME=$(eval echo "~$USERNAME")
+
+  log "Detected user: $USERNAME, home directory: $USER_HOME"
+}
+
 # Function to install necessary packages
 install_packages() {
   log "Installing Wayland, seatd, Sway, and dependencies..."
@@ -152,9 +163,9 @@ EOF
 # Configure Sway to use the detected system keyboard layout
 configure_sway_input() {
   log "Configuring Sway input devices with system keyboard layout..."
-  
-  # Create the Sway config file if it doesn't exist
-  SWAY_CONFIG_DIR="$HOME/.config/sway"
+
+  # Create the Sway config file in the user's home directory
+  SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
   SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
   mkdir -p "$SWAY_CONFIG_DIR"
 
@@ -191,6 +202,9 @@ main() {
 
   # Detect the system's current keyboard layout
   detect_keyboard_layout
+
+  # Detect the non-root user's home directory
+  get_user_home_directory
 
   # Install Wayland, seatd, Sway, and other essential packages
   install_packages
