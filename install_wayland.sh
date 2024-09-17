@@ -35,8 +35,15 @@ detect_keyboard_layout() {
 get_user_home_directory() {
   log "Detecting non-root user's home directory..."
 
-  # Get the username of the user running the script (who invoked sudo)
-  USERNAME=$(logname)
+  # Get the username of the user who invoked the script
+  USERNAME=$(logname 2>/dev/null || echo "$SUDO_USER")
+  
+  if [ -z "$USERNAME" ]; then
+    log "Failed to detect the non-root user. Exiting."
+    exit 1
+  fi
+
+  # Get the home directory of the non-root user
   USER_HOME=$(eval echo "~$USERNAME")
 
   log "Detected user: $USERNAME, home directory: $USER_HOME"
@@ -160,11 +167,11 @@ EOF
   fi
 }
 
-# Copy the default Sway config from /usr/local/etc/sway/config to ~/.config/sway
+# Copy the default Sway config from /usr/local/etc/sway/config to the non-root user's ~/.config/sway
 copy_default_sway_config() {
-  log "Copying default Sway configuration..."
+  log "Copying default Sway configuration to non-root user..."
 
-  # Create the Sway config directory in the user's home
+  # Create the Sway config directory in the non-root user's home
   SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
   mkdir -p "$SWAY_CONFIG_DIR"
 
@@ -210,7 +217,7 @@ main() {
   ensure_wayland_environment
   configure_xsession
 
-  # Copy the default Sway configuration to the user's home directory
+  # Copy the default Sway configuration to the non-root user's home directory
   copy_default_sway_config
 
   # Reboot the system to apply all changes
