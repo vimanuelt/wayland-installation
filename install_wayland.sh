@@ -3,9 +3,6 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Trap errors and report them
-trap 'echo "Error occurred at line $LINENO. Exiting."; rollback' ERR
-
 # Verbose mode (default: enabled)
 VERBOSE=1
 
@@ -16,7 +13,7 @@ log() {
   fi
 }
 
-# Cleanup function in case of errors
+# Cleanup function
 rollback() {
   log "Rolling back changes..."
   # Uninstall installed packages if rollback occurs
