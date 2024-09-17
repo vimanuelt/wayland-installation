@@ -17,6 +17,32 @@ log() {
   fi
 }
 
+# Function to prompt the user to select a screen resolution
+prompt_resolution_selection() {
+  log "Prompting user to select screen resolution..."
+
+  echo "Please select your preferred screen resolution:"
+  echo "1) 1366 x 768"
+  echo "2) 1920 x 1080"
+  echo "3) 2560 x 1440"
+  echo "4) 3840 x 2160"
+  
+  read -p "Enter the number corresponding to your selection (1-4): " resolution_choice
+
+  case "$resolution_choice" in
+    1) SCREEN_RESOLUTION="1366x768";;
+    2) SCREEN_RESOLUTION="1920x1080";;
+    3) SCREEN_RESOLUTION="2560x1440";;
+    4) SCREEN_RESOLUTION="3840x2160";;
+    *) 
+      echo "Invalid selection. Defaulting to 1366x768."
+      SCREEN_RESOLUTION="1366x768"
+    ;;
+  esac
+
+  log "Selected resolution: $SCREEN_RESOLUTION"
+}
+
 # Function to detect the system's keyboard layout from rc.conf
 detect_keyboard_layout() {
   log "Detecting system keyboard layout..."
@@ -251,7 +277,7 @@ copy_default_sway_config() {
     exit 1
   fi
 
-  # Append keyboard configuration, default resolution (1366x768), and remove swaynag exit prompt
+  # Append keyboard configuration, selected resolution, and remove swaynag exit prompt
   cat <<EOF >> "$SWAY_CONFIG_DIR/config"
 # Keyboard configuration
 input "type:keyboard" {
@@ -260,8 +286,8 @@ input "type:keyboard" {
     repeat_rate 30
 }
 
-# Set default screen resolution to 1366x768
-output * resolution 1366x768 scale 1.0
+# Set screen resolution to $SCREEN_RESOLUTION
+output * resolution $SCREEN_RESOLUTION scale 1.0
 
 # Keybinding to exit Sway (Mod + Shift + e)
 # Remove the default swaynag exit prompt and replace with direct exit
@@ -280,8 +306,8 @@ input "type:keyboard" {
     repeat_rate 30
 }
 
-# Set default screen resolution to 1366x768
-output * resolution 1366x768 scale 1.0
+# Set screen resolution to $SCREEN_RESOLUTION
+output * resolution $SCREEN_RESOLUTION scale 1.0
 
 # Keybinding to exit Sway (Mod + Shift + e)
 # Remove the default swaynag exit prompt and replace with direct exit
@@ -359,6 +385,9 @@ main() {
 
   # Detect the non-root user's home directory
   get_user_home_directory
+
+  # Prompt the user to select their preferred resolution
+  prompt_resolution_selection
 
   # Install Wayland, seatd, Sway, and other essential packages
   install_packages
