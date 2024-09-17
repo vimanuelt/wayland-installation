@@ -13,56 +13,57 @@ log() {
   fi
 }
 
-# Ensure XDG_RUNTIME_DIR is set globally for all sessions
-ensure_xdg_runtime_dir() {
-  if [ -z "$XDG_RUNTIME_DIR" ]; then
-    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
-      log "Creating XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR"
-      mkdir -p "$XDG_RUNTIME_DIR"
-      chmod 0700 "$XDG_RUNTIME_DIR"
-    fi
-  else
-    log "XDG_RUNTIME_DIR is already set to $XDG_RUNTIME_DIR"
-  fi
-
-  # Ensure XDG_RUNTIME_DIR is set in /etc/profile globally
-  if ! grep -q "XDG_RUNTIME_DIR" /etc/profile; then
-    log "Adding XDG_RUNTIME_DIR to /etc/profile for all users"
-    echo 'export XDG_RUNTIME_DIR="/run/user/$(id -u)"' >> /etc/profile
-  else
-    log "XDG_RUNTIME_DIR is already present in /etc/profile"
-  fi
-}
-
-# Function to install packages
+# Function to install necessary packages
 install_packages() {
-  log "Installing essential packages..."
-  pkg update -f || exit 1
+  log "Installing Wayland, seatd, Sway, and dependencies..."
+
+  # Essential packages for Wayland and Sway
+  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland"
 
   for pkg in $ESSENTIAL_PACKAGES; do
     if ! pkg info "$pkg" >/dev/null 2>&1; then
-      pkg install -y "$pkg" || exit 1
+      log "Installing $pkg..."
+      pkg install -y "$pkg"
     else
       log "$pkg is already installed."
     fi
   done
 
-  if [ "$INSTALL_OPTIONAL" = "y" ]; then
-    for pkg in $OPTIONAL_PACKAGES; do
-      if ! pkg info "$pkg" >/dev/null 2>&1; then
-        pkg install -y "$pkg" || log "Failed to install $pkg, continuing..."
-      else
-        log "$pkg is already installed."
-      fi
-    done
+  log "All required packages are installed."
+}
+
+# Ensure seatd and dbus services are enabled and running
+enable_services() {
+  log "Enabling seatd and dbus services..."
+
+  # Enable seatd and dbus on startup
+  sysrc seatd_enable="YES"
+  sysrc dbus_enable="YES"
+
+  # Start seatd and dbus if not already running
+  if service seatd status >/dev/null 2>&1; then
+    log "seatd is already running, continuing..."
+  else
+    log "Starting seatd service..."
+    service seatd start
+  fi
+
+  if service dbus status >/dev/null 2>&1; then
+    log "dbus is already running, continuing..."
+  else
+    log "Starting dbus service..."
+    service dbus start
   fi
 }
 
-# Create or update sway.desktop file
-configure_sway_desktop() {
-  log "Creating or updating sway.desktop for LightDM"
-  cat <<EOF > /usr/local/share/xsessions/sway.desktop
+# Ensure the sway.desktop file exists and is correctly configured
+ensure_sway_desktop() {
+  log "Checking sway.desktop for LightDM..."
+  SWAY_DESKTOP_FILE="/usr/local/share/xsessions/sway.desktop"
+  
+  if [ ! -f "$SWAY_DESKTOP_FILE" ]; then
+    log "Creating sway.desktop for LightDM"
+    cat <<EOF > "$SWAY_DESKTOP_FILE"
 [Desktop Entry]
 Name=Sway
 Comment=An i3-compatible Wayland window manager
@@ -71,57 +72,53 @@ TryExec=/usr/local/bin/sway
 Type=Application
 DesktopNames=Sway
 EOF
+  else
+    log "sway.desktop already exists."
+  fi
 }
 
-# Modify lightdm.conf to support Sway
+# Ensure LightDM is configured to launch Sway and not X11
 configure_lightdm() {
-  log "Configuring LightDM to support Sway"
-  
+  log "Configuring LightDM to use Sway and disable X11..."
+
   LIGHTDM_CONF="/usr/local/etc/lightdm/lightdm.conf"
   
-  # Ensure session-wrapper is set and default user session is flexible
+  # Ensure session-wrapper is set, default user session is Sway, and X is disabled
   sed -i '' -e 's/^#session-wrapper=.*/session-wrapper=\/usr\/local\/etc\/lightdm\/Xsession/' \
-            -e 's/^user-session=.*/user-session=default/' \
+            -e 's/^user-session=.*/user-session=sway/' \
+            -e 's/^#xserver-command=X/#xserver-command=X/' \
             "$LIGHTDM_CONF"
+  
+  log "LightDM configured to use Sway."
 }
 
-# Configure Sway input devices and seat management
-configure_sway_input() {
-  log "Configuring Sway input devices and seat management"
+# Ensure XDG_SESSION_TYPE and XDG_RUNTIME_DIR are set for Wayland
+ensure_wayland_environment() {
+  log "Ensuring Wayland environment variables are set..."
 
-  # Create ~/.config/sway/config if it doesn't exist
-  mkdir -p ~/.config/sway
+  # Set environment variables globally in /etc/profile
+  if ! grep -q "XDG_SESSION_TYPE=wayland" /etc/profile; then
+    log "Adding XDG_SESSION_TYPE to /etc/profile"
+    echo 'export XDG_SESSION_TYPE=wayland' >> /etc/profile
+  fi
 
-  # Append the input and seat configuration to sway config
-  cat <<EOF > ~/.config/sway/config
-# Input configuration
+  if ! grep -q "XDG_RUNTIME_DIR" /etc/profile; then
+    log "Adding XDG_RUNTIME_DIR to /etc/profile"
+    echo 'export XDG_RUNTIME_DIR=/run/user/$(id -u)' >> /etc/profile
+  fi
 
-# Keyboard input
-input "type:keyboard" {
-    xkb_layout us  # Change 'us' to your preferred keyboard layout
+  log "Wayland environment variables set."
 }
 
-# Mouse input
-input "type:mouse" {
-    pointer_accel 0.5
-}
-
-# Seat configuration for seatd
-seat seat0 {
-    attach input "type:keyboard"
-    attach input "type:mouse"
-}
-EOF
-}
-
-# Update Xsession script for XDG_RUNTIME_DIR and Sway session
+# Ensure Xsession script launches Sway when selected
 configure_xsession() {
-  log "Configuring Xsession script for Sway"
-  
+  log "Configuring Xsession script for Sway..."
+
   XSESSION_SCRIPT="/usr/local/etc/lightdm/Xsession"
-  
-  # Add XDG_RUNTIME_DIR and Sway startup handling
-  if ! grep -q "XDG_RUNTIME_DIR" "$XSESSION_SCRIPT"; then
+
+  # Check if Sway is configured to launch in Xsession script
+  if ! grep -q "exec sway" "$XSESSION_SCRIPT"; then
+    log "Adding Sway startup configuration to Xsession script"
     cat <<'EOF' >> "$XSESSION_SCRIPT"
 
 # Ensure XDG_RUNTIME_DIR is set
@@ -138,37 +135,14 @@ if [ "$1" = "sway" ]; then
     exec sway
 fi
 EOF
-  fi
-}
-
-# Enable and start seatd and dbus services, continue if seatd or dbus are already running
-enable_services() {
-  log "Enabling and starting seatd and dbus services"
-
-  # Enable seatd and dbus on startup
-  sysrc seatd_enable="YES"
-  sysrc dbus_enable="YES"
-
-  # Check if seatd is already running
-  if service seatd status >/dev/null 2>&1; then
-    log "seatd is already running, continuing..."
   else
-    log "Starting seatd service"
-    service seatd start
-  fi
-
-  # Check if dbus is already running
-  if service dbus status >/dev/null 2>&1; then
-    log "dbus is already running, continuing..."
-  else
-    log "Starting dbus service"
-    service dbus start
+    log "Sway is already configured in Xsession script."
   fi
 }
 
 # Restart LightDM to apply changes
 restart_lightdm() {
-  log "Restarting LightDM to apply changes"
+  log "Restarting LightDM to apply changes..."
   service lightdm restart
 }
 
@@ -179,17 +153,21 @@ main() {
     exit 1
   fi
 
-  log "Starting installation of Wayland environment with seatd and configuring LightDM for Sway..."
+  log "Starting installation of Wayland, seatd, and Sway..."
 
-  # Install packages, configure Sway session, and update LightDM and Xsession
+  # Install Wayland, seatd, Sway, and other essential packages
   install_packages
-  configure_sway_desktop
+
+  # Enable seatd and dbus services
+  enable_services
+
+  # Configure necessary components for LightDM and Sway
+  ensure_sway_desktop
   configure_lightdm
-  configure_sway_input
+  ensure_wayland_environment
   configure_xsession
 
-  # Enable services and restart LightDM
-  enable_services
+  # Restart LightDM to apply the changes
   restart_lightdm
 
   log "Installation and configuration complete!"
