@@ -118,6 +118,26 @@ if [ ! -d "$USER_HOME" ]; then
   exit 1
 fi
 
+# Determine the user's default shell and set the profile file accordingly
+USER_SHELL=$(getent passwd "$USERNAME" | cut -d: -f7)
+
+case "$USER_SHELL" in
+  */bash)
+    PROFILE_FILE="$USER_HOME/.bash_profile"
+    ;;
+  */zsh)
+    PROFILE_FILE="$USER_HOME/.zprofile"
+    ;;
+  */fish)
+    PROFILE_FILE="$USER_HOME/.config/fish/config.fish"
+    ;;
+  *)
+    PROFILE_FILE="$USER_HOME/.profile"
+    ;;
+esac
+
+log "Using profile file: $PROFILE_FILE"
+
 # Function to add user to the seatd group
 add_user_to_seatd() {
   if id -nG "$USERNAME" | grep -qw "seatd"; then
@@ -135,13 +155,7 @@ add_user_to_seatd() {
 configure_environment() {
   log "Configuring environment variables in $PROFILE_FILE..."
 
-  # Check if the user's home directory exists (it should by now)
-  if [ ! -d "$USER_HOME" ]; then
-    echo "User home directory $USER_HOME does not exist. Exiting."
-    exit 1
-  fi
-
-  # Create the profile file if it doesn't exist
+  # Check if the profile file exists; create it if necessary
   if [ ! -f "$PROFILE_FILE" ]; then
     log "Profile file $PROFILE_FILE does not exist. Creating it."
     if ! touch "$PROFILE_FILE"; then
