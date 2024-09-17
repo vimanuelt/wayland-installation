@@ -1,25 +1,20 @@
 # Wayland Installation Script for FreeBSD, GhostBSD, and PolarisBSD
 
-This script automates the installation of a native Wayland environment on FreeBSD using **seatd** for seat management. It installs essential packages like **Sway**, **dbus**, and other utilities to set up a Wayland session.
+This script automates the installation and configuration of a native Wayland environment on FreeBSD using **seatd** for seat management. It installs essential packages such as **Sway**, **dbus**, and other utilities to set up a Wayland session. After completing the installation, the system will automatically reboot to apply the changes.
 
 ## Features
 
-- Installs the necessary Wayland components, including:
-  - **seatd** for seat management
-  - **Sway** tiling window manager
-  - **libinput**, **wlroots**, **xwayland**, and other essential packages
-- Optionally installs additional Wayland-compatible tools like:
-  - **Alacritty** terminal
-  - **foot** terminal
-  - **swaylock** screen locker
-  - **noto** fonts
-  - **grim** (screenshot tool) and **slurp** (selection tool)
-- Automatically adds the specified user to the `seatd` group
-- Configures environment variables for Wayland
+- Installs necessary Wayland components:
+  - **Wayland**, **seatd** (for seat management), and **Sway** (a tiling window manager)
+  - Dependencies like **libinput**, **wlroots**, **xwayland**
+- Configures LightDM to launch **Sway** as the default session
+- Automatically adds the specified user to the **seatd** group for input device management
+- Ensures environment variables required for Wayland sessions are correctly set
+- Restarts LightDM and reboots the system upon completion to apply all changes
 
 ## Requirements
 
-- FreeBSD or GhostBSD or PolarisBSD system with internet access
+- FreeBSD, GhostBSD, or PolarisBSD system with internet access
 - Root privileges to execute the script
 
 ## Usage
@@ -53,46 +48,34 @@ chmod +x install_wayland.sh
 Execute the script with root privileges:
 
 ```sh
-sudo sh install_wayland.sh
+sudo ./install_wayland.sh
 ```
 
-### 4. Follow the Prompts
+### 4. Automatic Reboot
 
-The script will ask for:
-- A username to add to the `seatd` group
-- Whether you want to install optional packages (like terminals, fonts, etc.)
+After the installation and configuration are complete, the system will automatically reboot to apply all changes. After rebooting, you can log in and select **Sway** in the **LightDM** login screen.
 
-Follow the prompts to complete the installation.
+### 5. Select Sway in LightDM
 
-### 5. Log Out and Log Back In
-
-Once the script finishes, log out and log back in to apply the group changes and environment variables.
-
-### 6. Start Sway
-
-After logging back in, start **Sway** (or another Wayland compositor) with the following command:
-
-```sh
-sway
-```
+Once the system reboots, select **Sway** from the LightDM session options and log in.
 
 ## Script Overview
 
 - **Essential Packages**: The script installs the following essential packages:
-  - `seatd`, `wayland`, `wayland-protocols`, `sway`, `libinput`, `wlroots`, `mesa-libs`, `xwayland`, `dbus`
+  - `wayland`, `seatd`, `sway`, `libinput`, `wlroots`, `mesa-libs`, `xwayland`, `dbus`
   
-- **Optional Packages**: If chosen, the script also installs:
-  - `alacritty`, `foot`, `swaylock`, `swayidle`, `grim`, `slurp`, `noto`
-
 - **Services**:
-  - Enables and starts the **seatd** and **dbus** services automatically.
+  - Automatically enables and starts the **seatd** and **dbus** services to ensure proper input device and session management.
   
+- **LightDM Configuration**:
+  - Configures **LightDM** to launch **Sway** as the default session and disables launching X11.
+
 - **Environment Configuration**:
-  - Configures the environment variables for Wayland in the appropriate profile file (`.profile`, `.bash_profile`, or `.zprofile` depending on the shell).
+  - Ensures that **Wayland**-related environment variables (`XDG_SESSION_TYPE=wayland` and `XDG_RUNTIME_DIR`) are correctly set in **/etc/profile**.
 
 ## Customization
 
-You can modify the script to add or remove specific packages by editing the `ESSENTIAL_PACKAGES` and `OPTIONAL_PACKAGES` variables.
+You can modify the script to add or remove specific packages by editing the `ESSENTIAL_PACKAGES` variable.
 
 ## Troubleshooting
 
@@ -102,15 +85,19 @@ You can modify the script to add or remove specific packages by editing the `ESS
 2. **Internet Connection Required**:
    - The script needs internet access to install the packages using `pkg`.
 
-3. **Check Logs**:
-   - If any errors occur, check `/var/log/messages` for system errors or review the output from the script.
+3. **LightDM Not Showing Sway**:
+   - Ensure **sway.desktop** is properly configured in **/usr/local/share/xsessions**.
+   - Check that **LightDM** is configured to use **Sway** as the session by inspecting **lightdm.conf**.
 
-4. **Sway Not Starting**:
-   - Ensure that **seatd** and **dbus** services are running:
+4. **Check Logs**:
+   - If any errors occur, check **/var/log/lightdm/lightdm.log** for **LightDM**-related issues or review the script's output for any other error messages.
+
+5. **Sway Not Starting**:
+   - Ensure that the **seatd** and **dbus** services are running:
      ```sh
      service seatd status
      service dbus status
      ```
 
-   - Check your `~/.local/share/sway/log` for more detailed error information if Sway doesn't start.
+   - Check your **~/.local/share/sway/log** for more detailed error information if Sway doesn't start.
 
