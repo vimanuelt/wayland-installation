@@ -141,7 +141,7 @@ EOF
   fi
 }
 
-# Enable and start seatd and dbus services
+# Enable and start seatd and dbus services, continue if seatd is already running
 enable_services() {
   log "Enabling and starting seatd and dbus services"
 
@@ -149,8 +149,15 @@ enable_services() {
   sysrc seatd_enable="YES"
   sysrc dbus_enable="YES"
 
-  # Start seatd and dbus services
-  service seatd start
+  # Check if seatd is already running
+  if service seatd status >/dev/null 2>&1; then
+    log "seatd is already running, continuing..."
+  else
+    log "Starting seatd service"
+    service seatd start
+  fi
+
+  # Start dbus service
   service dbus start
 }
 
