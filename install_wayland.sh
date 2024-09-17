@@ -141,7 +141,7 @@ EOF
   fi
 }
 
-# Enable and start seatd and dbus services, continue if seatd is already running
+# Enable and start seatd and dbus services, continue if seatd or dbus are already running
 enable_services() {
   log "Enabling and starting seatd and dbus services"
 
@@ -157,8 +157,13 @@ enable_services() {
     service seatd start
   fi
 
-  # Start dbus service
-  service dbus start
+  # Check if dbus is already running
+  if service dbus status >/dev/null 2>&1; then
+    log "dbus is already running, continuing..."
+  else
+    log "Starting dbus service"
+    service dbus start
+  fi
 }
 
 # Restart LightDM to apply changes
