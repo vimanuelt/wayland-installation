@@ -19,8 +19,11 @@ log() {
 
 # Function to prompt the user to select a screen resolution
 prompt_resolution_selection() {
+  # Prompt directly to the user's terminal, bypassing log redirection
   log "Prompting user to select screen resolution..."
 
+  # Ensure prompt is displayed on the user's terminal
+  exec < /dev/tty
   echo "Please select your preferred screen resolution:"
   echo "1) 1366 x 768"
   echo "2) 1920 x 1080"
