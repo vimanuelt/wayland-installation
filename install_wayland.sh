@@ -6,6 +6,10 @@ set -e
 # Verbose mode (default: enabled)
 VERBOSE=1
 
+# Log file for debugging
+LOG_FILE="/var/log/install_wayland.log"
+exec > "$LOG_FILE" 2>&1
+
 # Function for logging
 log() {
   if [ "$VERBOSE" -eq 1 ]; then
@@ -23,7 +27,10 @@ install_packages() {
   for pkg in $ESSENTIAL_PACKAGES; do
     if ! pkg info "$pkg" >/dev/null 2>&1; then
       log "Installing $pkg..."
-      pkg install -y "$pkg"
+      if ! pkg install -y "$pkg"; then
+        log "Error installing $pkg"
+        exit 1
+      fi
     else
       log "$pkg is already installed."
     fi
@@ -37,23 +44,31 @@ enable_services() {
   log "Enabling seatd and dbus services..."
 
   # Enable seatd and dbus on startup
-  sysrc seatd_enable="YES"
-  sysrc dbus_enable="YES"
+  sysrc seatd_enable="YES" || { log "Failed to enable seatd"; exit 1; }
+  sysrc dbus_enable="YES" || { log "Failed to enable dbus"; exit 1; }
 
   # Start seatd and dbus if not already running
   if service seatd status >/dev/null 2>&1; then
     log "seatd is already running, continuing..."
   else
     log "Starting seatd service..."
-    service seatd start
+    if ! service seatd start; then
+      log "Failed to start seatd"
+      exit 1
+    fi
   fi
 
   if service dbus status >/dev/null 2>&1; then
     log "dbus is already running, continuing..."
   else
     log "Starting dbus service..."
-    service dbus start
+    if ! service dbus start; then
+      log "Failed to start dbus"
+      exit 1
+    fi
   fi
+
+  log "Services enabled and running."
 }
 
 # Ensure the sway.desktop file exists and is correctly configured
@@ -143,13 +158,19 @@ EOF
 # Restart LightDM to apply changes
 restart_lightdm() {
   log "Restarting LightDM to apply changes..."
-  service lightdm restart
+  if ! service lightdm restart; then
+    log "Failed to restart LightDM"
+    exit 1
+  fi
 }
 
 # Reboot the system after the script completes
 reboot_system() {
   log "Rebooting the system to apply changes..."
-  reboot
+  if ! reboot; then
+    log "Failed to reboot the system"
+    exit 1
+  fi
 }
 
 # Main script logic
