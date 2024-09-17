@@ -146,6 +146,12 @@ restart_lightdm() {
   service lightdm restart
 }
 
+# Reboot the system after the script completes
+reboot_system() {
+  log "Rebooting the system to apply changes..."
+  reboot
+}
+
 # Main script logic
 main() {
   if [ "$(id -u)" -ne 0 ]; then
@@ -169,6 +175,9 @@ main() {
 
   # Restart LightDM to apply the changes
   restart_lightdm
+
+  # Reboot the system to apply all changes
+  reboot_system
 
   log "Installation and configuration complete!"
 }
