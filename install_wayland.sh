@@ -251,7 +251,7 @@ copy_default_sway_config() {
     exit 1
   fi
 
-  # Append keyboard configuration to both configurations
+  # Append keyboard configuration and remove swaynag exit prompt
   cat <<EOF >> "$SWAY_CONFIG_DIR/config"
 # Keyboard configuration
 input "type:keyboard" {
@@ -260,7 +260,9 @@ input "type:keyboard" {
     repeat_rate 30
 }
 
-# Keybinding to exit Sway
+# Keybinding to exit Sway (Mod + Shift + e)
+# Remove the default swaynag exit prompt and replace with direct exit
+unbindsym \$mod+Shift+e
 bindsym \$mod+Shift+e exec "swaymsg exit"
 EOF
 
@@ -272,7 +274,9 @@ input "type:keyboard" {
     repeat_rate 30
 }
 
-# Keybinding to exit Sway
+# Keybinding to exit Sway (Mod + Shift + e)
+# Remove the default swaynag exit prompt and replace with direct exit
+unbindsym \$mod+Shift+e
 bindsym \$mod+Shift+e exec "swaymsg exit"
 EOF
 }
