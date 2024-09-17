@@ -100,6 +100,34 @@ EOF
   log "Input permissions configured successfully."
 }
 
+# Function to set up the toggle_seatd.sh script
+setup_toggle_seatd_script() {
+  log "Setting up the toggle_seatd.sh script..."
+
+  cat <<EOF > /usr/local/bin/toggle_seatd.sh
+#!/bin/sh
+
+if [ "\$1" = "wayland" ]; then
+    echo "Enabling seatd devd rule for Wayland..."
+    sudo sed -i '' 's/^#//g' /etc/devd/seatd-input.conf
+    sudo service devd restart
+    sudo service seatd start
+elif [ "\$1" = "x" ]; then
+    echo "Disabling seatd devd rule for X Window..."
+    sudo sed -i '' 's/^\(.*\)/#\1/g' /etc/devd/seatd-input.conf
+    sudo service devd restart
+    sudo service seatd stop
+else
+    echo "Usage: toggle_seatd.sh {wayland|x}"
+fi
+EOF
+
+  # Make the script executable
+  chmod +x /usr/local/bin/toggle_seatd.sh
+
+  log "toggle_seatd.sh script has been set up successfully."
+}
+
 # Enable seatd, dbus, and LightDM services to start on boot, but do not start them immediately
 enable_services_on_boot() {
   log "Enabling seatd, dbus, and LightDM services to start on boot..."
@@ -180,7 +208,7 @@ configure_xsession() {
 # Ensure XDG_RUNTIME_DIR is set
 if [ -z "$XDG_RUNTIME_DIR" ]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-    if [ ! -d "$XDG_RUNTIME_DIR"; then
+    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
         mkdir -p "$XDG_RUNTIME_DIR"
         chmod 0700 "$XDG_RUNTIME_DIR"
     fi
@@ -278,6 +306,9 @@ main() {
 
   # Configure input permissions
   configure_input_permissions
+
+  # Set up toggle_seatd.sh script for switching between Wayland and X
+  setup_toggle_seatd_script
 
   # Enable seatd, dbus, and LightDM services to start on boot
   enable_services_on_boot
