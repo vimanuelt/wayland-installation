@@ -160,26 +160,70 @@ EOF
   fi
 }
 
-# Configure Sway to use the detected system keyboard layout
+# Configure Sway with a standard configuration file
 configure_sway_input() {
-  log "Configuring Sway input devices with system keyboard layout..."
+  log "Configuring Sway with a standard configuration..."
 
   # Create the Sway config file in the user's home directory
   SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
   SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
   mkdir -p "$SWAY_CONFIG_DIR"
 
-  # Add keyboard layout to Sway config
+  # Add a standard Sway configuration file
   cat <<EOF > "$SWAY_CONFIG_FILE"
 # Sway configuration file
 
-# Input configuration
+### Set keyboard layout
 input "type:keyboard" {
     xkb_layout $KEYMAP
 }
+
+### Set your preferred terminal emulator
+set \$term alacritty
+
+### Set mod key (Mod1 is the Alt key, Mod4 is the Super key)
+set \$mod Mod4
+
+### Switch between windows
+bindsym \$mod+Return exec \$term
+bindsym \$mod+d exec "dmenu_run"
+
+### Kill focused window
+bindsym \$mod+Shift+q kill
+
+### Change focus
+bindsym \$mod+h focus left
+bindsym \$mod+j focus down
+bindsym \$mod+k focus up
+bindsym \$mod+l focus right
+
+### Move focused window
+bindsym \$mod+Shift+h move left
+bindsym \$mod+Shift+j move down
+bindsym \$mod+Shift+k move up
+bindsym \$mod+Shift+l move right
+
+### Split layout
+bindsym \$mod+v split v
+bindsym \$mod+s split h
+
+### Fullscreen
+bindsym \$mod+f fullscreen
+
+### Workspace management
+bindsym \$mod+1 workspace 1
+bindsym \$mod+2 workspace 2
+bindsym \$mod+3 workspace 3
+
+### Floating windows
+bindsym \$mod+Shift+space floating toggle
+
+### Reload Sway config
+bindsym \$mod+Shift+c reload
+bindsym \$mod+Shift+r restart
 EOF
 
-  log "Sway configured with keyboard layout: $KEYMAP"
+  log "Sway configured with keyboard layout: $KEYMAP and standard keybindings."
 }
 
 # Reboot the system after the script completes
@@ -218,7 +262,7 @@ main() {
   ensure_wayland_environment
   configure_xsession
 
-  # Configure Sway to use the system keyboard layout
+  # Configure Sway with a standard configuration file
   configure_sway_input
 
   # Reboot the system to apply all changes
