@@ -71,6 +71,35 @@ install_packages() {
   log "All required packages are installed."
 }
 
+# Ensure the user is in the seatd group and manage input device permissions
+configure_input_permissions() {
+  log "Configuring input permissions..."
+
+  # Add the user to the seatd group
+  log "Adding $USERNAME to the seatd group..."
+  pw groupmod seatd -m "$USERNAME"
+
+  # Manually adjust the permissions of the input devices
+  log "Setting proper permissions on input devices..."
+  chgrp seatd /dev/input/event* || { log "Failed to change group of input devices"; exit 1; }
+  chmod g+rw /dev/input/event* || { log "Failed to set group read/write permissions on input devices"; exit 1; }
+
+  # Create a devd rule to automatically set permissions for future input devices
+  log "Creating devd rule for input devices..."
+  cat <<EOF > /etc/devd/seatd-input.conf
+attach 100 {
+    match "ugen[0-9]+";    # Match input devices
+    action "chgrp seatd /dev/input/event*; chmod g+rw /dev/input/event*";
+};
+EOF
+
+  # Restart devd to apply the rule
+  log "Restarting devd to apply new rule..."
+  service devd restart || { log "Failed to restart devd"; exit 1; }
+
+  log "Input permissions configured successfully."
+}
+
 # Enable seatd, dbus, and LightDM services to start on boot, but do not start them immediately
 enable_services_on_boot() {
   log "Enabling seatd, dbus, and LightDM services to start on boot..."
@@ -151,7 +180,7 @@ configure_xsession() {
 # Ensure XDG_RUNTIME_DIR is set
 if [ -z "$XDG_RUNTIME_DIR" ]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    if [ ! -d "$XDG_RUNTIME_DIR"; then
         mkdir -p "$XDG_RUNTIME_DIR"
         chmod 0700 "$XDG_RUNTIME_DIR"
     fi
@@ -240,6 +269,9 @@ main() {
 
   # Install Wayland, seatd, Sway, and other essential packages
   install_packages
+
+  # Configure input permissions
+  configure_input_permissions
 
   # Enable seatd, dbus, and LightDM services to start on boot
   enable_services_on_boot
