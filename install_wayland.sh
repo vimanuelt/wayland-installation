@@ -53,36 +53,16 @@ install_packages() {
   log "All required packages are installed."
 }
 
-# Ensure seatd and dbus services are enabled and running
-enable_services() {
-  log "Enabling seatd and dbus services..."
+# Enable seatd, dbus, and LightDM services to start on boot, but do not start them immediately
+enable_services_on_boot() {
+  log "Enabling seatd, dbus, and LightDM services to start on boot..."
 
-  # Enable seatd and dbus on startup
+  # Enable seatd, dbus, and LightDM on startup
   sysrc seatd_enable="YES" || { log "Failed to enable seatd"; exit 1; }
   sysrc dbus_enable="YES" || { log "Failed to enable dbus"; exit 1; }
+  sysrc lightdm_enable="YES" || { log "Failed to enable LightDM"; exit 1; }
 
-  # Start seatd and dbus if not already running
-  if service seatd status >/dev/null 2>&1; then
-    log "seatd is already running, continuing..."
-  else
-    log "Starting seatd service..."
-    if ! service seatd start; then
-      log "Failed to start seatd"
-      exit 1
-    fi
-  fi
-
-  if service dbus status >/dev/null 2>&1; then
-    log "dbus is already running, continuing..."
-  else
-    log "Starting dbus service..."
-    if ! service dbus start; then
-      log "Failed to start dbus"
-      exit 1
-    fi
-  fi
-
-  log "Services enabled and running."
+  log "Services will start after reboot."
 }
 
 # Ensure the sway.desktop file exists and is correctly configured
@@ -191,15 +171,6 @@ EOF
   log "Sway configured with keyboard layout: $KEYMAP"
 }
 
-# Restart LightDM to apply changes
-restart_lightdm() {
-  log "Restarting LightDM to apply changes..."
-  if ! service lightdm restart; then
-    log "Failed to restart LightDM"
-    exit 1
-  fi
-}
-
 # Reboot the system after the script completes
 reboot_system() {
   log "Rebooting the system to apply changes..."
@@ -224,8 +195,8 @@ main() {
   # Install Wayland, seatd, Sway, and other essential packages
   install_packages
 
-  # Enable seatd and dbus services
-  enable_services
+  # Enable seatd, dbus, and LightDM services to start on boot
+  enable_services_on_boot
 
   # Configure necessary components for LightDM and Sway
   ensure_sway_desktop
@@ -235,9 +206,6 @@ main() {
 
   # Configure Sway to use the system keyboard layout
   configure_sway_input
-
-  # Restart LightDM to apply the changes
-  restart_lightdm
 
   # Reboot the system to apply all changes
   reboot_system
