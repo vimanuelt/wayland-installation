@@ -35,6 +35,29 @@ ensure_xdg_runtime_dir() {
   fi
 }
 
+# Function to ensure seatd socket permissions are correct
+ensure_seatd_socket_permissions() {
+  SEATD_SOCKET="/var/run/seatd.sock"
+  
+  if [ -e "$SEATD_SOCKET" ]; then
+    log "Checking seatd socket permissions..."
+    
+    # Change ownership to root:seatd if it's not already set
+    if [ "$(stat -c %G "$SEATD_SOCKET")" != "seatd" ]; then
+      log "Changing group of $SEATD_SOCKET to seatd"
+      sudo chown root:seatd "$SEATD_SOCKET"
+    fi
+    
+    # Ensure correct permissions (660)
+    if [ "$(stat -c %a "$SEATD_SOCKET")" != "660" ]; then
+      log "Setting permissions to 660 for $SEATD_SOCKET"
+      sudo chmod 660 "$SEATD_SOCKET"
+    fi
+  else
+    log "seatd socket $SEATD_SOCKET not found. Please check if seatd is running."
+  fi
+}
+
 # Cleanup function
 rollback() {
   log "Rolling back changes..."
@@ -211,6 +234,9 @@ main() {
   # Set up environment for the specific user
   add_user_to_seatd
   configure_environment
+
+  # Ensure seatd socket permissions are correct
+  ensure_seatd_socket_permissions
 
   log "Installation and configuration complete!"
 }
