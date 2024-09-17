@@ -109,6 +109,15 @@ if ! id "$USERNAME" >/dev/null 2>&1; then
   exit 1
 fi
 
+# Set the user's home directory
+USER_HOME=$(getent passwd "$USERNAME" | cut -d: -f6)
+
+# Check if the home directory exists, exit if not found
+if [ ! -d "$USER_HOME" ]; then
+  echo "User home directory $USER_HOME does not exist. Exiting."
+  exit 1
+fi
+
 # Function to add user to the seatd group
 add_user_to_seatd() {
   if id -nG "$USERNAME" | grep -qw "seatd"; then
@@ -126,7 +135,7 @@ add_user_to_seatd() {
 configure_environment() {
   log "Configuring environment variables in $PROFILE_FILE..."
 
-  # Check if the user's home directory exists
+  # Check if the user's home directory exists (it should by now)
   if [ ! -d "$USER_HOME" ]; then
     echo "User home directory $USER_HOME does not exist. Exiting."
     exit 1
