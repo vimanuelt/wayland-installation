@@ -47,7 +47,7 @@ install_packages() {
   log "Installing Wayland, seatd, Sway, and dependencies..."
 
   # Essential packages for Wayland and Sway
-  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland"
+  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland foot grim wofi swaynag"
 
   for pkg in $ESSENTIAL_PACKAGES; do
     if ! pkg info "$pkg" >/dev/null 2>&1; then
@@ -160,70 +160,98 @@ EOF
   fi
 }
 
-# Configure Sway with a standard configuration file
+# Configure Sway with the provided configuration
 configure_sway_input() {
-  log "Configuring Sway with a standard configuration..."
+  log "Configuring Sway with the provided configuration..."
 
   # Create the Sway config file in the user's home directory
   SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
   SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
   mkdir -p "$SWAY_CONFIG_DIR"
 
-  # Add a standard Sway configuration file
+  # Add the provided Sway configuration file
   cat <<EOF > "$SWAY_CONFIG_FILE"
-# Sway configuration file
+# Default config for sway
 
-### Set keyboard layout
-input "type:keyboard" {
-    xkb_layout $KEYMAP
+### Variables
+set \$mod Mod4  # Use Mod4 (Super/Windows key) as the modifier key
+set \$left h
+set \$down j
+set \$up k
+set \$right l
+set \$term foot  # Terminal emulator
+set \$menu wofi  # Application launcher
+
+### Output configuration
+output * bg /usr/local/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+
+### Key bindings
+# Basics
+bindsym \$mod+Return exec \$term  # Open terminal
+bindsym \$mod+Shift+q kill  # Close focused window
+bindsym \$mod+d exec \$menu  # Open application launcher
+floating_modifier \$mod normal  # Drag floating windows with mod + mouse buttons
+bindsym \$mod+Shift+c reload  # Reload config
+bindsym \$mod+Shift+e exec swaynag -t warning -m 'Exit sway?' -B 'Yes' 'swaymsg exit'  # Exit sway
+
+# Navigation
+bindsym \$mod+\$left focus left
+bindsym \$mod+\$down focus down
+bindsym \$mod+\$up focus up
+bindsym \$mod+\$right focus right
+bindsym \$mod+Shift+\$left move left
+bindsym \$mod+Shift+\$down move down
+bindsym \$mod+Shift+\$up move up
+bindsym \$mod+Shift+\$right move right
+
+# Workspaces
+bindsym \$mod+{1-10} workspace number {1-10}
+bindsym \$mod+Shift+{1-10} move container to workspace number {1-10}
+
+# Layout
+bindsym \$mod+b splith
+bindsym \$mod+v splitv
+bindsym \$mod+s layout stacking
+bindsym \$mod+w layout tabbed
+bindsym \$mod+e layout toggle split
+bindsym \$mod+f fullscreen
+bindsym \$mod+Shift+space floating toggle
+bindsym \$mod+space focus mode_toggle
+bindsym \$mod+a focus parent
+
+# Scratchpad
+bindsym \$mod+Shift+minus move scratchpad
+bindsym \$mod+minus scratchpad show
+
+# Resizing
+mode "resize" {
+    bindsym \$left resize shrink width 10px
+    bindsym \$down resize grow height 10px
+    bindsym \$up resize shrink height 10px
+    bindsym \$right resize grow width 10px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym \$mod+r mode "resize"
+
+# Utilities
+bindsym Print exec grim  # Screenshot
+
+# Status Bar
+bar {
+    position top
+    status_command while date +'%Y-%m-%d %X'; do sleep 1; done
+    colors {
+        statusline #ffffff
+        background #323232
+        inactive_workspace #32323200 #32323200 #5c5c5c
+    }
 }
 
-### Set your preferred terminal emulator
-set \$term alacritty
-
-### Set mod key (Mod1 is the Alt key, Mod4 is the Super key)
-set \$mod Mod4
-
-### Switch between windows
-bindsym \$mod+Return exec \$term
-bindsym \$mod+d exec "dmenu_run"
-
-### Kill focused window
-bindsym \$mod+Shift+q kill
-
-### Change focus
-bindsym \$mod+h focus left
-bindsym \$mod+j focus down
-bindsym \$mod+k focus up
-bindsym \$mod+l focus right
-
-### Move focused window
-bindsym \$mod+Shift+h move left
-bindsym \$mod+Shift+j move down
-bindsym \$mod+Shift+k move up
-bindsym \$mod+Shift+l move right
-
-### Split layout
-bindsym \$mod+v split v
-bindsym \$mod+s split h
-
-### Fullscreen
-bindsym \$mod+f fullscreen
-
-### Workspace management
-bindsym \$mod+1 workspace 1
-bindsym \$mod+2 workspace 2
-bindsym \$mod+3 workspace 3
-
-### Floating windows
-bindsym \$mod+Shift+space floating toggle
-
-### Reload Sway config
-bindsym \$mod+Shift+c reload
-bindsym \$mod+Shift+r restart
+include /usr/local/etc/sway/config.d/*
 EOF
 
-  log "Sway configured with keyboard layout: $KEYMAP and standard keybindings."
+  log "Sway configured with the provided configuration."
 }
 
 # Reboot the system after the script completes
@@ -262,7 +290,7 @@ main() {
   ensure_wayland_environment
   configure_xsession
 
-  # Configure Sway with a standard configuration file
+  # Configure Sway with the provided configuration file
   configure_sway_input
 
   # Reboot the system to apply all changes
