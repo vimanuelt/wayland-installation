@@ -88,7 +88,7 @@ configure_input_permissions() {
   log "Creating devd rule for input devices..."
   cat <<EOF > /etc/devd/seatd-input.conf
 attach 100 {
-    match "ugen[0-9]+";    # Match input devices
+    device-name "input/event";
     action "chgrp seatd /dev/input/event*; chmod g+rw /dev/input/event*";
 };
 EOF
@@ -208,7 +208,7 @@ configure_xsession() {
 # Ensure XDG_RUNTIME_DIR is set
 if [ -z "$XDG_RUNTIME_DIR" ]; then
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    if [ ! -d "$XDG_RUNTIME_DIR"; then
         mkdir -p "$XDG_RUNTIME_DIR"
         chmod 0700 "$XDG_RUNTIME_DIR"
     fi
