@@ -19,18 +19,17 @@ log() {
 
 # Function to prompt the user to select a screen resolution
 prompt_resolution_selection() {
-  # Prompt directly to the user's terminal, bypassing log redirection
   log "Prompting user to select screen resolution..."
 
-  # Ensure prompt is displayed on the user's terminal
-  exec < /dev/tty
-  echo "Please select your preferred screen resolution:"
-  echo "1) 1366 x 768"
-  echo "2) 1920 x 1080"
-  echo "3) 2560 x 1440"
-  echo "4) 3840 x 2160"
-  
-  read -p "Enter the number corresponding to your selection (1-4): " resolution_choice
+  # Output prompt directly to the terminal and read input
+  printf "\nPlease select your preferred screen resolution:\n" > /dev/tty
+  printf "1) 1366 x 768\n" > /dev/tty
+  printf "2) 1920 x 1080\n" > /dev/tty
+  printf "3) 2560 x 1440\n" > /dev/tty
+  printf "4) 3840 x 2160\n" > /dev/tty
+
+  # Read user input from the terminal
+  read -p "Enter the number corresponding to your selection (1-4): " resolution_choice < /dev/tty
 
   case "$resolution_choice" in
     1) SCREEN_RESOLUTION="1366x768";;
@@ -38,7 +37,7 @@ prompt_resolution_selection() {
     3) SCREEN_RESOLUTION="2560x1440";;
     4) SCREEN_RESOLUTION="3840x2160";;
     *) 
-      echo "Invalid selection. Defaulting to 1366x768."
+      printf "Invalid selection. Defaulting to 1366x768.\n" > /dev/tty
       SCREEN_RESOLUTION="1366x768"
     ;;
   esac
