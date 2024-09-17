@@ -17,6 +17,20 @@ log() {
   fi
 }
 
+# Function to detect the system's keyboard layout from rc.conf
+detect_keyboard_layout() {
+  log "Detecting system keyboard layout..."
+  
+  # Detect keyboard layout from /etc/rc.conf
+  if grep -q "keymap=" /etc/rc.conf; then
+    KEYMAP=$(grep "keymap=" /etc/rc.conf | cut -d'"' -f2)
+    log "Detected keyboard layout: $KEYMAP"
+  else
+    log "No keyboard layout detected, defaulting to 'us'"
+    KEYMAP="us"
+  fi
+}
+
 # Function to install necessary packages
 install_packages() {
   log "Installing Wayland, seatd, Sway, and dependencies..."
@@ -155,6 +169,28 @@ EOF
   fi
 }
 
+# Configure Sway to use the detected system keyboard layout
+configure_sway_input() {
+  log "Configuring Sway input devices with system keyboard layout..."
+  
+  # Create the Sway config file if it doesn't exist
+  SWAY_CONFIG_DIR="$HOME/.config/sway"
+  SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
+  mkdir -p "$SWAY_CONFIG_DIR"
+
+  # Add keyboard layout to Sway config
+  cat <<EOF > "$SWAY_CONFIG_FILE"
+# Sway configuration file
+
+# Input configuration
+input "type:keyboard" {
+    xkb_layout $KEYMAP
+}
+EOF
+
+  log "Sway configured with keyboard layout: $KEYMAP"
+}
+
 # Restart LightDM to apply changes
 restart_lightdm() {
   log "Restarting LightDM to apply changes..."
@@ -182,6 +218,9 @@ main() {
 
   log "Starting installation of Wayland, seatd, and Sway..."
 
+  # Detect the system's current keyboard layout
+  detect_keyboard_layout
+
   # Install Wayland, seatd, Sway, and other essential packages
   install_packages
 
@@ -193,6 +232,9 @@ main() {
   configure_lightdm
   ensure_wayland_environment
   configure_xsession
+
+  # Configure Sway to use the system keyboard layout
+  configure_sway_input
 
   # Restart LightDM to apply the changes
   restart_lightdm
