@@ -231,6 +231,9 @@ input "type:keyboard" {
     repeat_delay 500
     repeat_rate 30
 }
+
+# Keybinding to exit Sway
+bindsym \$mod+Shift+e exec "swaymsg exit"
 EOF
 
   cat <<EOF >> "$SWAY_USER_CONFIG_DIR/config"
@@ -240,6 +243,9 @@ input "type:keyboard" {
     repeat_delay 500
     repeat_rate 30
 }
+
+# Keybinding to exit Sway
+bindsym \$mod+Shift+e exec "swaymsg exit"
 EOF
 }
 
