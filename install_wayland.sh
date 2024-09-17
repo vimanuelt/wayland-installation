@@ -160,98 +160,18 @@ EOF
   fi
 }
 
-# Configure Sway with the provided configuration
-configure_sway_input() {
-  log "Configuring Sway with the provided configuration..."
+# Copy the default Sway config from /usr/local/etc/sway/config to ~/.config/sway
+copy_default_sway_config() {
+  log "Copying default Sway configuration..."
 
-  # Create the Sway config file in the user's home directory
+  # Create the Sway config directory in the user's home
   SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
-  SWAY_CONFIG_FILE="$SWAY_CONFIG_DIR/config"
   mkdir -p "$SWAY_CONFIG_DIR"
 
-  # Add the provided Sway configuration file
-  cat <<EOF > "$SWAY_CONFIG_FILE"
-# Default config for sway
+  # Copy the default Sway configuration file
+  cp /usr/local/etc/sway/config "$SWAY_CONFIG_DIR/"
 
-### Variables
-set \$mod Mod4  # Use Mod4 (Super/Windows key) as the modifier key
-set \$left h
-set \$down j
-set \$up k
-set \$right l
-set \$term foot  # Terminal emulator
-set \$menu wofi  # Application launcher
-
-### Output configuration
-output * bg /usr/local/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-
-### Key bindings
-# Basics
-bindsym \$mod+Return exec \$term  # Open terminal
-bindsym \$mod+Shift+q kill  # Close focused window
-bindsym \$mod+d exec \$menu  # Open application launcher
-floating_modifier \$mod normal  # Drag floating windows with mod + mouse buttons
-bindsym \$mod+Shift+c reload  # Reload config
-bindsym \$mod+Shift+e exec swaynag -t warning -m 'Exit sway?' -B 'Yes' 'swaymsg exit'  # Exit sway
-
-# Navigation
-bindsym \$mod+\$left focus left
-bindsym \$mod+\$down focus down
-bindsym \$mod+\$up focus up
-bindsym \$mod+\$right focus right
-bindsym \$mod+Shift+\$left move left
-bindsym \$mod+Shift+\$down move down
-bindsym \$mod+Shift+\$up move up
-bindsym \$mod+Shift+\$right move right
-
-# Workspaces
-bindsym \$mod+{1-10} workspace number {1-10}
-bindsym \$mod+Shift+{1-10} move container to workspace number {1-10}
-
-# Layout
-bindsym \$mod+b splith
-bindsym \$mod+v splitv
-bindsym \$mod+s layout stacking
-bindsym \$mod+w layout tabbed
-bindsym \$mod+e layout toggle split
-bindsym \$mod+f fullscreen
-bindsym \$mod+Shift+space floating toggle
-bindsym \$mod+space focus mode_toggle
-bindsym \$mod+a focus parent
-
-# Scratchpad
-bindsym \$mod+Shift+minus move scratchpad
-bindsym \$mod+minus scratchpad show
-
-# Resizing
-mode "resize" {
-    bindsym \$left resize shrink width 10px
-    bindsym \$down resize grow height 10px
-    bindsym \$up resize shrink height 10px
-    bindsym \$right resize grow width 10px
-    bindsym Return mode "default"
-    bindsym Escape mode "default"
-}
-bindsym \$mod+r mode "resize"
-
-# Utilities
-bindsym Print exec grim  # Screenshot
-
-# Status Bar
-bar {
-    position top
-    status_command while date +'%Y-%m-%d %X'; do sleep 1; done
-    colors {
-        statusline #ffffff
-        background #323232
-        inactive_workspace #32323200 #32323200 #5c5c5c
-    }
-}
-
-include /usr/local/etc/sway/config.d/*
-EOF
-
-  log "Sway configured with the provided configuration."
+  log "Default Sway configuration copied to $SWAY_CONFIG_DIR."
 }
 
 # Reboot the system after the script completes
@@ -290,8 +210,8 @@ main() {
   ensure_wayland_environment
   configure_xsession
 
-  # Configure Sway with the provided configuration file
-  configure_sway_input
+  # Copy the default Sway configuration to the user's home directory
+  copy_default_sway_config
 
   # Reboot the system to apply all changes
   reboot_system
