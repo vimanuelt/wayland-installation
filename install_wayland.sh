@@ -54,7 +54,7 @@ install_packages() {
   log "Installing Wayland, seatd, Sway, and dependencies..."
 
   # Essential packages for Wayland and Sway
-  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland foot grim wofi swaynag"
+  ESSENTIAL_PACKAGES="wayland seatd sway libinput wlroots xwayland foot grim wofi"
 
   for pkg in $ESSENTIAL_PACKAGES; do
     if ! pkg info "$pkg" >/dev/null 2>&1; then
