@@ -167,18 +167,32 @@ EOF
   fi
 }
 
-# Copy the default Sway config from /usr/local/etc/sway/config to the non-root user's ~/.config/sway
+# Copy the default Sway config from /usr/local/etc/sway/config to both root's and non-root user's ~/.config/sway
 copy_default_sway_config() {
-  log "Copying default Sway configuration to non-root user..."
+  log "Copying default Sway configuration..."
 
-  # Create the Sway config directory in the non-root user's home
-  SWAY_CONFIG_DIR="$USER_HOME/.config/sway"
+  # Create the Sway config directory in root's home
+  SWAY_CONFIG_DIR="/root/.config/sway"
   mkdir -p "$SWAY_CONFIG_DIR"
 
-  # Copy the default Sway configuration file
-  cp /usr/local/etc/sway/config "$SWAY_CONFIG_DIR/"
+  # Copy the default Sway configuration to root's home
+  if cp /usr/local/etc/sway/config "$SWAY_CONFIG_DIR/"; then
+    log "Copied default Sway configuration to /root/.config/sway"
+  else
+    log "Failed to copy default Sway configuration to /root/.config/sway"
+    exit 1
+  fi
 
-  log "Default Sway configuration copied to $SWAY_CONFIG_DIR."
+  # Now copy the config to the non-root user's home
+  SWAY_USER_CONFIG_DIR="$USER_HOME/.config/sway"
+  mkdir -p "$SWAY_USER_CONFIG_DIR"
+
+  if cp /usr/local/etc/sway/config "$SWAY_USER_CONFIG_DIR/"; then
+    log "Copied default Sway configuration to $USER_HOME/.config/sway"
+  else
+    log "Failed to copy default Sway configuration to $USER_HOME/.config/sway"
+    exit 1
+  fi
 }
 
 # Reboot the system after the script completes
@@ -217,7 +231,7 @@ main() {
   ensure_wayland_environment
   configure_xsession
 
-  # Copy the default Sway configuration to the non-root user's home directory
+  # Copy the default Sway configuration to both root's and non-root user's home directories
   copy_default_sway_config
 
   # Reboot the system to apply all changes
