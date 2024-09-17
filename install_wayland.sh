@@ -100,6 +100,39 @@ EOF
   log "Input permissions configured successfully."
 }
 
+# Function to detect monitor resolution and configure Sway outputs
+detect_and_configure_monitors() {
+  log "Detecting connected monitors and configuring Sway outputs..."
+
+  # Get output details using swaymsg
+  OUTPUT_INFO=$(swaymsg -t get_outputs)
+
+  # Parse the output information to detect monitor name and resolution
+  MONITOR_NAME=$(echo "$OUTPUT_INFO" | grep -oP '(?<=name":")[^"]+')
+  MONITOR_WIDTH=$(echo "$OUTPUT_INFO" | grep -oP '(?<=current_mode":\{"width":)[0-9]+')
+  MONITOR_HEIGHT=$(echo "$OUTPUT_INFO" | grep -oP '(?<=current_mode":\{"width":[0-9]+,"height":)[0-9]+')
+
+  if [ -z "$MONITOR_NAME" ] || [ -z "$MONITOR_WIDTH" ] || [ -z "$MONITOR_HEIGHT" ]; then
+    log "Could not detect monitor information."
+    return
+  fi
+
+  log "Detected monitor: $MONITOR_NAME with resolution ${MONITOR_WIDTH}x${MONITOR_HEIGHT}"
+
+  # Create monitor configuration in Sway
+  MONITOR_CONFIG="
+# Monitor configuration for $MONITOR_NAME
+output $MONITOR_NAME resolution ${MONITOR_WIDTH}x${MONITOR_HEIGHT}
+output $MONITOR_NAME scale 1.0
+"
+
+  # Append the monitor configuration to the Sway config
+  echo "$MONITOR_CONFIG" >> "$SWAY_USER_CONFIG_DIR/config"
+  echo "$MONITOR_CONFIG" >> "$SWAY_CONFIG_DIR/config"
+
+  log "Monitor configuration added to Sway config."
+}
+
 # Function to set up the toggle_seatd.sh script
 setup_toggle_seatd_script() {
   log "Setting up the toggle_seatd.sh script..."
@@ -279,6 +312,9 @@ input "type:keyboard" {
 unbindsym \$mod+Shift+e
 bindsym \$mod+Shift+e exec "swaymsg exit"
 EOF
+
+  # Auto-detect monitors and configure the Sway config accordingly
+  detect_and_configure_monitors
 }
 
 # Reboot the system after the script completes
