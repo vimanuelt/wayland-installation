@@ -98,6 +98,17 @@ create_seatd_group() {
   fi
 }
 
+# Prompt for the username if not set
+if [ -z "$USERNAME" ]; then
+  read -p "Enter the username to configure: " USERNAME
+fi
+
+# Verify the user exists
+if ! id "$USERNAME" >/dev/null 2>&1; then
+  echo "User $USERNAME does not exist. Exiting."
+  exit 1
+fi
+
 # Function to add user to the seatd group
 add_user_to_seatd() {
   if id -nG "$USERNAME" | grep -qw "seatd"; then
