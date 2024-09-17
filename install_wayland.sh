@@ -83,10 +83,15 @@ enable_service() {
     fi
   fi
 
-  # Start the service
-  if ! service "$service_name" start; then
-    echo "Failed to start $service_name service. Exiting."
-    exit 1
+  # Check if the service is already running
+  if service "$service_name" status >/dev/null 2>&1; then
+    log "$service_name is already running."
+  else
+    # Start the service if it's not running
+    log "Starting $service_name service..."
+    if ! service "$service_name" start; then
+      echo "Failed to start $service_name service. Continuing."
+    fi
   fi
 }
 
