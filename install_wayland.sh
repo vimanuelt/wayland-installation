@@ -251,7 +251,7 @@ copy_default_sway_config() {
     exit 1
   fi
 
-  # Append keyboard configuration and remove swaynag exit prompt
+  # Append keyboard configuration, resolution key bindings, and remove swaynag exit prompt
   cat <<EOF >> "$SWAY_CONFIG_DIR/config"
 # Keyboard configuration
 input "type:keyboard" {
@@ -264,6 +264,12 @@ input "type:keyboard" {
 # Remove the default swaynag exit prompt and replace with direct exit
 unbindsym \$mod+Shift+e
 bindsym \$mod+Shift+e exec "swaymsg exit"
+
+# Keybindings to change screen resolution
+bindsym \$mod+F1 exec "swaymsg output * resolution 1920x1080"
+bindsym \$mod+F2 exec "swaymsg output * resolution 2560x1440"
+bindsym \$mod+F3 exec "swaymsg output * resolution 3840x2160"
+bindsym \$mod+F4 exec "swaymsg output * mode --custom"
 
 # Detect and configure monitors
 exec_always --no-startup-id ~/.config/sway/monitor_detect.sh
@@ -281,6 +287,12 @@ input "type:keyboard" {
 # Remove the default swaynag exit prompt and replace with direct exit
 unbindsym \$mod+Shift+e
 bindsym \$mod+Shift+e exec "swaymsg exit"
+
+# Keybindings to change screen resolution
+bindsym \$mod+F1 exec "swaymsg output * resolution 1920x1080"
+bindsym \$mod+F2 exec "swaymsg output * resolution 2560x1440"
+bindsym \$mod+F3 exec "swaymsg output * resolution 3840x2160"
+bindsym \$mod+F4 exec "swaymsg output * mode --custom"
 
 # Detect and configure monitors
 exec_always --no-startup-id ~/.config/sway/monitor_detect.sh
