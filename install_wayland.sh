@@ -121,6 +121,19 @@ add_user_to_seatd() {
   fi
 }
 
+# Function to set XDG_RUNTIME_DIR
+set_xdg_runtime_dir() {
+  if [ -z "$XDG_RUNTIME_DIR" ]; then
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+      log "Creating XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR"
+      mkdir -p "$XDG_RUNTIME_DIR"
+      chmod 700 "$XDG_RUNTIME_DIR"
+    fi
+  fi
+  log "XDG_RUNTIME_DIR is set to $XDG_RUNTIME_DIR"
+}
+
 # Function to configure environment variables
 configure_environment() {
   log "Configuring environment variables in $PROFILE_FILE..."
@@ -152,6 +165,7 @@ configure_environment() {
 
 # Wayland environment variables added on $(date)
 export XDG_SESSION_TYPE=wayland
+export XDG_RUNTIME_DIR=/run/user/\$(id -u) # For Wayland
 export MOZ_ENABLE_WAYLAND=1    # For Firefox
 export QT_QPA_PLATFORM=wayland # For Qt applications
 EOF
@@ -243,6 +257,9 @@ main() {
 
   # Add the user to the seatd group
   add_user_to_seatd
+
+  # Set XDG_RUNTIME_DIR
+  set_xdg_runtime_dir
 
   # Configure environment variables
   configure_environment
